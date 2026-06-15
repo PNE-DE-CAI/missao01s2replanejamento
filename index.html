@@ -373,12 +373,22 @@
     .two-col { grid-template-columns: 1fr; }
     .hero h1 { font-size: 1.2rem; }
   }
+  /* Estilos para impressão do relatório (usado no iframe) */
   @media print {
-    body { background: white; padding: 0; }
-    .main-container { background: white; padding: 0; box-shadow: none; border: none; }
-    .header, .print-btn { display: none; }
-    .card { break-inside: avoid; border: 1px solid #ccc; }
-    .screen { display: block !important; }
+    body * {
+      visibility: hidden;
+    }
+    #print-report-area, #print-report-area * {
+      visibility: visible;
+    }
+    #print-report-area {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      margin: 0;
+      padding: 20px;
+    }
   }
 </style>
 </head>
@@ -537,16 +547,20 @@
       <div class="card" style="border-top:4px solid #d32f2f">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem">
           <div><p style="font-size:0.7rem;color:#d32f2f;font-weight:800">Jornada da Aprendizagem — URE Caieiras</p><h2 style="color:#0a2f6c;">Relatório · Missão 1: Arrumando a mochila</h2></div>
-          <button class="btn" onclick="imprimirRelatorio()"><i class="fas fa-print"></i> Imprimir / PDF</button>
+          <button class="btn" onclick="imprimirSomenteRelatorio()"><i class="fas fa-print"></i> Imprimir / PDF</button>
         </div>
         <div id="relatorio-conteudo"></div>
-        <div class="btn-group"><button class="btn" onclick="mostrarScreen('s6')"><i class="fas fa-arrow-left"></i> Voltar</button><button class="btn btn-primary" onclick="imprimirRelatorio()"><i class="fas fa-print"></i> Imprimir / salvar PDF</button></div>
+        <div class="btn-group">
+          <button class="btn" onclick="mostrarScreen('s6')"><i class="fas fa-arrow-left"></i> Voltar</button>
+          <button class="btn btn-primary" onclick="imprimirSomenteRelatorio()"><i class="fas fa-print"></i> Imprimir / salvar PDF</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<button class="print-btn" onclick="window.print()"><i class="fas fa-print"></i> Imprimir / Salvar PDF</button>
+<!-- Botão fixo que agora imprime apenas o relatório -->
+<button class="print-btn" onclick="imprimirSomenteRelatorio()"><i class="fas fa-print"></i> Imprimir / Salvar PDF</button>
 
 <script>
   // estado da jornada
@@ -650,7 +664,92 @@
     document.getElementById('relatorio-conteudo').innerHTML = html;
   }
 
-  function imprimirRelatorio() { window.print(); }
+  // Função que imprime APENAS o relatório gerado (sem a interface)
+  function imprimirSomenteRelatorio() {
+    const conteudo = document.getElementById('relatorio-conteudo');
+    if (!conteudo || !conteudo.innerHTML.trim() || conteudo.innerHTML === '') {
+      alert('Nenhum relatório foi gerado ainda. Complete a missão e gere o relatório primeiro.');
+      return;
+    }
+    // Cria um iframe invisível para impressão
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow.document;
+    // Monta o HTML do relatório com estilo próprio
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Relatório Missão 1 - Arrumando a Mochila</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            font-family: 'Inter', sans-serif;
+            background: white;
+            padding: 30px;
+            color: #1e293b;
+          }
+          .print-header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #d32f2f;
+            padding-bottom: 16px;
+          }
+          .print-header h1 {
+            color: #0a2f6c;
+            font-size: 1.5rem;
+          }
+          .print-header p {
+            color: #475569;
+            font-size: 0.8rem;
+          }
+          .report-section {
+            border-left: 3px solid #d32f2f;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+          }
+          .report-section h3 {
+            font-size: 0.9rem;
+            color: #0a2f6c;
+            margin-bottom: 0.5rem;
+          }
+          .report-item {
+            font-size: 0.8rem;
+            margin-bottom: 6px;
+            line-height: 1.5;
+          }
+          .report-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #d32f2f;
+          }
+          hr { margin: 1rem 0; }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <h1>🎒 Relatório da Missão 1 – Arrumando a Mochila</h1>
+          <p>Jornada da Aprendizagem · URE Caieiras - Seduc SP</p>
+        </div>
+        ${conteudo.outerHTML}
+        <hr>
+        <p style="text-align: center; font-size: 0.7rem; color: #64748b; margin-top: 20px;">Documento gerado em ${new Date().toLocaleString('pt-BR')}</p>
+      </body>
+      </html>
+    `);
+    doc.close();
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+  }
+
   atualizarDots();
 </script>
 </body>
